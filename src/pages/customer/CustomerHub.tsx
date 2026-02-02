@@ -1,187 +1,17 @@
-import { useState } from "react";
-import { Calendar, Heart, AlertCircle, Sparkles, Clock, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, Heart, AlertCircle, Sparkles, Clock, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import CustomerBottomNav from "@/components/layout/CustomerBottomNav";
 import ProfessionalCard from "@/components/customer/ProfessionalCard";
-import CustomerBookingCard from "@/components/customer/CustomerBookingCard";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { useProfessionals } from "@/hooks/useProfessionals";
+import { useFavorites } from "@/hooks/useFavorites";
+import { useCustomerProfile } from "@/hooks/useCustomerProfile";
 
 type HubTab = "bookings" | "favorites" | "emergency";
 type DiscoverTab = "discover" | "recent";
 type BookingFilter = "all" | "upcoming" | "in_progress" | "completed";
 
-const mockProfessionals = [
-  {
-    id: "1",
-    name: "Robert Wilson",
-    profession: "Builder",
-    location: "Residential Project",
-    lastActive: "1 hour ago",
-    rating: 4.9,
-    reviewCount: 189,
-    distance: "Eastside",
-    dailyRate: 150,
-    weeklyRate: 1050,
-    bio: "Master builder with extensive experience in residential and commercial construction. Specialized in custom homes and renovation projects.",
-    avatarUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
-  },
-  {
-    id: "2",
-    name: "David Lee",
-    profession: "Electrical Engineer",
-    location: "Industrial Zone",
-    lastActive: "3 hours ago",
-    rating: 4.8,
-    reviewCount: 167,
-    distance: "Southside",
-    dailyRate: 160,
-    weeklyRate: 1120,
-    bio: "Licensed electrical engineer with expertise in electrical system design, power distribution, and...",
-    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-  },
-  {
-    id: "3",
-    name: "Jennifer Martinez",
-    profession: "Structural Engineer",
-    location: "Engineering Office",
-    lastActive: "1 hour ago",
-    rating: 4.9,
-    reviewCount: 145,
-    distance: "Downtown",
-    dailyRate: 175,
-    weeklyRate: 1225,
-    bio: "Professional structural engineer specializing in building analysis, foundation design, and seismic...",
-    avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
-  },
-];
-
-const mockFavorites = [
-  {
-    id: "1",
-    name: "James Anderson",
-    profession: "Architect",
-    location: "City Center",
-    lastActive: "2 hours ago",
-    rating: 4.9,
-    reviewCount: 156,
-    distance: "Downtown",
-    dailyRate: 200,
-    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-    isFavorite: true,
-  },
-  {
-    id: "2",
-    name: "Michael Thompson",
-    profession: "Project Manager",
-    location: "Construction Site A",
-    lastActive: "30 min ago",
-    rating: 4.8,
-    reviewCount: 203,
-    distance: "Westside",
-    dailyRate: 180,
-    avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
-    isFavorite: true,
-  },
-  {
-    id: "3",
-    name: "Sarah Mitchell",
-    profession: "Interior Designer",
-    location: "Design Studio",
-    lastActive: "45 min ago",
-    rating: 4.9,
-    reviewCount: 224,
-    distance: "Northside",
-    dailyRate: 120,
-    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-    isFavorite: true,
-  },
-];
-
-const mockConnections = [
-  {
-    id: "1",
-    name: "James Anderson",
-    profession: "Architect",
-    location: "City Center",
-    lastActive: "2 hours ago",
-    rating: 4.9,
-    reviewCount: 156,
-    distance: "Downtown",
-    dailyRate: 200,
-    weeklyRate: 1400,
-    bio: "Licensed architect with 18 years of experience in residential and commercial design. Specialized in...",
-    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-  },
-  {
-    id: "2",
-    name: "Michael Thompson",
-    profession: "Project Manager",
-    location: "Construction Site A",
-    lastActive: "30 min ago",
-    rating: 4.8,
-    reviewCount: 203,
-    distance: "Westside",
-    dailyRate: 180,
-    weeklyRate: 1260,
-    bio: "PMP certified project manager specializing in construction project coordination, timeline...",
-    avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
-  },
-  {
-    id: "3",
-    name: "Sarah Mitchell",
-    profession: "Interior Designer",
-    location: "Design Studio",
-    lastActive: "45 min ago",
-    rating: 4.9,
-    reviewCount: 224,
-    distance: "Northside",
-    dailyRate: 120,
-    weeklyRate: 840,
-    bio: "Award-winning interior designer specializing in contemporary and luxury residential spaces. Expe...",
-    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-  },
-];
-
-const mockEmergencyProfessionals = [
-  {
-    id: "1",
-    name: "David Lee",
-    profession: "Electrical Engineer",
-    location: "Industrial Zone",
-    lastActive: "2 hours",
-    rating: 4.8,
-    reviewCount: 203,
-    distance: "3.2 mi away",
-    dailyRate: 160,
-    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-  },
-  {
-    id: "2",
-    name: "Mike Johnson",
-    profession: "Plumber",
-    location: "Plumbing Supply Store",
-    lastActive: "30 min",
-    rating: 4.8,
-    reviewCount: 178,
-    distance: "0.5 mi away",
-    dailyRate: 65,
-    avatarUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
-  },
-  {
-    id: "3",
-    name: "Sarah Williams",
-    profession: "Electrician",
-    location: "Hardware Store",
-    lastActive: "45 min",
-    rating: 4.9,
-    reviewCount: 203,
-    distance: "1.2 mi away",
-    dailyRate: 75,
-    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop",
-  },
-];
 
 const mockBookings = [
   {
@@ -253,18 +83,30 @@ const CustomerHub = () => {
   
   const [activeHubTab, setActiveHubTab] = useState<HubTab>(initialTab);
   const [discoverTab, setDiscoverTab] = useState<DiscoverTab>("discover");
-  const [bookingFilter, setBookingFilter] = useState<BookingFilter>("all");
+
+  const { professionals, loading: professionalsLoading } = useProfessionals();
+  const { profile: customerProfile } = useCustomerProfile();
+  const { favorites, loading: favoritesLoading, addFavorite, removeFavorite, isFavorite } = useFavorites();
+
+  const handleToggleFavorite = async (professionalId: string) => {
+    if (isFavorite(professionalId)) {
+      await removeFavorite(professionalId);
+    } else {
+      await addFavorite(professionalId);
+    }
+  };
+
+  // Filter emergency professionals (those with certain professions)
+  const emergencyProfessions = ["Plumber", "Electrician", "HVAC", "Locksmith"];
+  const emergencyProfessionals = professionals.filter(p => 
+    emergencyProfessions.some(ep => p.profession?.toLowerCase().includes(ep.toLowerCase()))
+  );
 
   const hubTabs = [
     { id: "bookings" as const, label: "My Bookings", icon: Calendar },
     { id: "favorites" as const, label: "Favorites", icon: Heart },
     { id: "emergency" as const, label: "Emergency", icon: AlertCircle },
   ];
-
-  const filteredBookings = mockBookings.filter(booking => {
-    if (bookingFilter === "all") return true;
-    return booking.status === bookingFilter;
-  });
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -312,38 +154,51 @@ const CustomerHub = () => {
               </Button>
             </div>
 
-            {discoverTab === "discover" ? (
+            {professionalsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : discoverTab === "discover" ? (
               <>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-semibold text-foreground">Explore New Professionals</h2>
-                  <span className="text-sm text-muted-foreground">{mockProfessionals.length} available</span>
+                  <span className="text-sm text-muted-foreground">{professionals.length} available</span>
                 </div>
-                <div className="space-y-3">
-                  {mockProfessionals.map((professional) => (
-                    <ProfessionalCard
-                      key={professional.id}
-                      {...professional}
-                      variant="detailed"
-                      onView={() => navigate(`/customer/professional/${professional.id}`)}
-                    />
-                  ))}
-                </div>
+                {professionals.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No professionals found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {professionals.map((professional) => (
+                      <ProfessionalCard
+                        key={professional.id}
+                        id={professional.id}
+                        name={professional.full_name}
+                        profession={professional.profession || "Professional"}
+                        location={professional.location || "Location not set"}
+                        lastActive="Recently"
+                        rating={4.8}
+                        reviewCount={0}
+                        distance=""
+                        dailyRate={professional.daily_rate ? parseInt(professional.daily_rate) : 0}
+                        weeklyRate={professional.contract_rate ? parseInt(professional.contract_rate) : 0}
+                        bio={professional.bio || ""}
+                        variant="detailed"
+                        onView={() => navigate(`/customer/professional/${professional.id}`)}
+                      />
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
               <>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-semibold text-foreground">Your Connections</h2>
-                  <span className="text-sm text-muted-foreground">{mockConnections.length} connections</span>
+                  <span className="text-sm text-muted-foreground">0 connections</span>
                 </div>
-                <div className="space-y-3">
-                  {mockConnections.map((professional) => (
-                    <ProfessionalCard
-                      key={professional.id}
-                      {...professional}
-                      variant="detailed"
-                      onView={() => navigate(`/customer/professional/${professional.id}`)}
-                    />
-                  ))}
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No connections yet. Book a professional to connect!</p>
                 </div>
               </>
             )}
@@ -354,19 +209,38 @@ const CustomerHub = () => {
           <>
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold text-foreground">Favorites</h2>
-              <span className="text-sm text-muted-foreground">{mockFavorites.length} saved professionals</span>
+              <span className="text-sm text-muted-foreground">{favorites.length} saved professionals</span>
             </div>
-            <div className="space-y-3">
-              {mockFavorites.map((professional) => (
-                <ProfessionalCard
-                  key={professional.id}
-                  {...professional}
-                  variant="favorite"
-                  onBook={() => navigate(`/customer/professional/${professional.id}`)}
-                  onFavoriteToggle={() => console.log("Toggle favorite", professional.id)}
-                />
-              ))}
-            </div>
+            {favoritesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : favorites.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No favorites yet. Heart a professional to save them!</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {favorites.map((fav) => (
+                  <ProfessionalCard
+                    key={fav.id}
+                    id={fav.professional_id}
+                    name={fav.professional?.full_name || "Professional"}
+                    profession={fav.professional?.profession || "Professional"}
+                    location={fav.professional?.location || "Location not set"}
+                    lastActive="Recently"
+                    rating={4.8}
+                    reviewCount={0}
+                    distance=""
+                    dailyRate={fav.professional?.daily_rate ? parseInt(fav.professional.daily_rate) : 0}
+                    variant="favorite"
+                    isFavorite={true}
+                    onBook={() => navigate(`/customer/professional/${fav.professional_id}`)}
+                    onFavoriteToggle={() => handleToggleFavorite(fav.professional_id)}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
 
@@ -398,20 +272,38 @@ const CustomerHub = () => {
 
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-foreground">Available Now</h3>
-              <span className="text-sm text-muted-foreground">({mockEmergencyProfessionals.length})</span>
+              <span className="text-sm text-muted-foreground">({emergencyProfessionals.length})</span>
             </div>
 
-            <div className="space-y-3">
-              {mockEmergencyProfessionals.map((professional) => (
-                <ProfessionalCard
-                  key={professional.id}
-                  {...professional}
-                  variant="emergency"
-                  onView={() => navigate(`/customer/professional/${professional.id}`)}
-                  onCall={() => console.log("Call", professional.id)}
-                />
-              ))}
-            </div>
+            {professionalsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : emergencyProfessionals.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No emergency professionals available</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {emergencyProfessionals.map((professional) => (
+                  <ProfessionalCard
+                    key={professional.id}
+                    id={professional.id}
+                    name={professional.full_name}
+                    profession={professional.profession || "Professional"}
+                    location={professional.location || "Location not set"}
+                    lastActive="Recently"
+                    rating={4.8}
+                    reviewCount={0}
+                    distance=""
+                    dailyRate={professional.daily_rate ? parseInt(professional.daily_rate) : 0}
+                    variant="emergency"
+                    onView={() => navigate(`/customer/professional/${professional.id}`)}
+                    onCall={() => window.open(`tel:${professional.phone_number}`, '_self')}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, SlidersHorizontal, ChevronDown, AlertCircle, Sparkles } from "lucide-react";
+import { Search, SlidersHorizontal, ChevronDown, AlertCircle, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import CustomerBottomNav from "@/components/layout/CustomerBottomNav";
 import ProfessionalCard from "@/components/customer/ProfessionalCard";
 import CategoryCard from "@/components/customer/CategoryCard";
 import { useNavigate } from "react-router-dom";
+import { useProfessionals } from "@/hooks/useProfessionals";
 
 const categories = [
   { name: "Architect", icon: "architect" },
@@ -17,89 +18,25 @@ const categories = [
   { name: "Structural Engineer", icon: "structural-engineer" },
 ];
 
-const mockProfessionals = [
-  {
-    id: "1",
-    name: "James Anderson",
-    profession: "Architect",
-    location: "City Center",
-    lastActive: "2 hours ago",
-    rating: 4.9,
-    reviewCount: 156,
-    distance: "1.2 mi",
-    dailyRate: 200,
-    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-  },
-  {
-    id: "2",
-    name: "Robert Wilson",
-    profession: "Builder",
-    location: "Residential Project",
-    lastActive: "1 hour ago",
-    rating: 4.9,
-    reviewCount: 189,
-    distance: "2.5 mi",
-    dailyRate: 150,
-    avatarUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
-  },
-  {
-    id: "3",
-    name: "Sarah Mitchell",
-    profession: "Interior Designer",
-    location: "Design Studio",
-    lastActive: "45 min ago",
-    rating: 4.9,
-    reviewCount: 224,
-    distance: "1.5 mi",
-    dailyRate: 120,
-    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-  },
-  {
-    id: "4",
-    name: "Jennifer Martinez",
-    profession: "Structural Engineer",
-    location: "Engineering Office",
-    lastActive: "1 hour ago",
-    rating: 4.9,
-    reviewCount: 145,
-    distance: "0.9 mi",
-    dailyRate: 175,
-    avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
-  },
-  {
-    id: "5",
-    name: "Sarah Williams",
-    profession: "Electrician",
-    location: "Hardware Store",
-    lastActive: "45 min ago",
-    rating: 4.9,
-    reviewCount: 203,
-    distance: "1.2 mi",
-    dailyRate: 75,
-    avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop",
-  },
-  {
-    id: "6",
-    name: "Michael Thompson",
-    profession: "Project Manager",
-    location: "Construction Site A",
-    lastActive: "30 min ago",
-    rating: 4.8,
-    reviewCount: 203,
-    distance: "0.8 mi",
-    dailyRate: 180,
-    avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
-  },
-];
-
 const CustomerHome = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "professionals" | "handymen">("all");
   const [sortBy, setSortBy] = useState("Top Rated");
   const [showAllCategories, setShowAllCategories] = useState(false);
+  
+  const { professionals, loading, fetchProfessionals } = useProfessionals();
 
   const displayedCategories = showAllCategories ? categories : categories.slice(0, 6);
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
+    fetchProfessionals({ search: value });
+  };
+
+  const handleCategoryClick = (categoryName: string) => {
+    fetchProfessionals({ profession: categoryName });
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -112,7 +49,7 @@ const CustomerHome = () => {
           <Input
             placeholder="Search for services..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className="pl-10 h-10 bg-muted/50 border-0 rounded-xl"
           />
         </div>
@@ -174,7 +111,7 @@ const CustomerHome = () => {
                 key={category.name}
                 name={category.name}
                 icon={category.icon}
-                onClick={() => console.log("Category:", category.name)}
+                onClick={() => handleCategoryClick(category.name)}
               />
             ))}
           </div>
@@ -191,19 +128,37 @@ const CustomerHome = () => {
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-foreground">Top Rated Professionals</h2>
             <Badge variant="secondary" className="text-xs">
-              {mockProfessionals.length}
+              {professionals.length}
             </Badge>
           </div>
-          <div className="space-y-3">
-            {mockProfessionals.map((professional) => (
-              <ProfessionalCard
-                key={professional.id}
-                {...professional}
-                variant="compact"
-                onView={() => navigate(`/customer/professional/${professional.id}`)}
-              />
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : professionals.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No professionals found</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {professionals.map((professional) => (
+                <ProfessionalCard
+                  key={professional.id}
+                  id={professional.id}
+                  name={professional.full_name}
+                  profession={professional.profession || "Professional"}
+                  location={professional.location || "Location not set"}
+                  lastActive="Recently"
+                  rating={4.8}
+                  reviewCount={0}
+                  distance=""
+                  dailyRate={professional.daily_rate ? parseInt(professional.daily_rate) : 0}
+                  variant="compact"
+                  onView={() => navigate(`/customer/professional/${professional.id}`)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
