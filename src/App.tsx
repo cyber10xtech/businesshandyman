@@ -14,6 +14,11 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Bookings from "./pages/Bookings";
 import Profile from "./pages/Profile";
+import EditProfile from "./pages/EditProfile";
+import Verification from "./pages/Verification";
+import Certifications from "./pages/Certifications";
+import BoostProfile from "./pages/BoostProfile";
+import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
 import Chat from "./pages/Chat";
@@ -44,6 +49,11 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/bookings" element={<Bookings />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/edit-profile" element={<EditProfile />} />
+            <Route path="/verification" element={<Verification />} />
+            <Route path="/certifications" element={<Certifications />} />
+            <Route path="/boost-profile" element={<BoostProfile />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/chat/:id" element={<Chat />} />
