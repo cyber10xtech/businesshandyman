@@ -2,7 +2,6 @@ import { useState } from "react";
 import { FileText, Upload, X, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
 import { RegistrationData } from "@/pages/Register";
 
 interface StepDocumentsProps {
@@ -18,6 +17,8 @@ interface UploadedFile {
   path: string;
   size: number;
 }
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 const StepDocuments = ({ data, onUpdate, onNext, onBack, userId }: StepDocumentsProps) => {
   const [uploading, setUploading] = useState(false);
@@ -53,24 +54,32 @@ const StepDocuments = ({ data, onUpdate, onNext, onBack, userId }: StepDocuments
           continue;
         }
 
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `${userId}/${fileName}`;
+        // Create FormData for the edge function
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('fileName', file.name);
 
-        const { error: uploadError } = await supabase.storage
-          .from('professional-documents')
-          .upload(filePath, file);
+        // Upload via edge function (bypasses RLS during registration)
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/upload-document`, {
+          method: 'POST',
+          headers: {
+            'x-user-id': userId,
+          },
+          body: formData,
+        });
 
-        if (uploadError) {
-          console.error("Upload error:", uploadError);
-          setError("Failed to upload file. Please try again.");
+        const result = await response.json();
+
+        if (!response.ok || result.error) {
+          console.error("Upload error:", result.error);
+          setError(result.error || "Failed to upload file. Please try again.");
           continue;
         }
 
         newFiles.push({
-          name: file.name,
-          path: filePath,
-          size: file.size,
+          name: result.name,
+          path: result.path,
+          size: result.size,
         });
       }
 
@@ -87,15 +96,24 @@ const StepDocuments = ({ data, onUpdate, onNext, onBack, userId }: StepDocuments
   };
 
   const removeFile = async (filePath: string) => {
-    try {
-      await supabase.storage
-        .from('professional-documents')
-        .remove([filePath]);
+    if (!userId) return;
 
-      setUploadedFiles(prev => prev.filter(f => f.path !== filePath));
-      
-      if (uploadedFiles.length <= 1) {
-        onUpdate({ documentsUploaded: false });
+    try {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/delete-document`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': userId,
+        },
+        body: JSON.stringify({ filePath }),
+      });
+
+      if (response.ok) {
+        setUploadedFiles(prev => prev.filter(f => f.path !== filePath));
+        
+        if (uploadedFiles.length <= 1) {
+          onUpdate({ documentsUploaded: false });
+        }
       }
     } catch (err) {
       console.error("Delete error:", err);
