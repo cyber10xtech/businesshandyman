@@ -51,11 +51,11 @@ const Profile = () => {
   }
 
   const menuItems = [
-    { icon: Edit3, label: "Edit Profile", description: "Update your information" },
-    { icon: Shield, label: "Verification", description: "Manage your credentials", badge: profile.documents_uploaded ? "Verified" : undefined },
-    { icon: Award, label: "Certifications", description: "Add professional certificates" },
-    { icon: Zap, label: "Boost Profile", description: "Get more visibility", badge: "Pro" },
-    { icon: Settings, label: "Settings", description: "App preferences" },
+    { icon: Edit3, label: "Edit Profile", description: "Update your information", path: "/edit-profile" },
+    { icon: Shield, label: "Verification", description: "Manage your credentials", badge: profile.documents_uploaded ? "Verified" : undefined, path: "/verification" },
+    { icon: Award, label: "Certifications", description: "Add professional certificates", path: "/certifications" },
+    { icon: Zap, label: "Boost Profile", description: "Get more visibility", badge: "Pro", path: "/boost-profile" },
+    { icon: Settings, label: "Settings", description: "App preferences", path: "/settings" },
   ];
 
   const getInitials = (name: string) => {
@@ -186,6 +186,7 @@ const Profile = () => {
           {menuItems.map((item, index) => (
             <button
               key={index}
+              onClick={() => navigate(item.path)}
               className="w-full flex items-center gap-4 p-4 hover:bg-muted/50 transition-colors border-b border-border last:border-b-0"
             >
               <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
