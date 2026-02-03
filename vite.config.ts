@@ -20,8 +20,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt"],
       manifest: {
-        name: "ProConnect - Business App",
-        short_name: "ProConnect",
+        name: "Safesearch Business",
+        short_name: "Safesearch",
         description: "Connect with clients, manage bookings, and grow your business",
         theme_color: "#2563eb",
         background_color: "#ffffff",
