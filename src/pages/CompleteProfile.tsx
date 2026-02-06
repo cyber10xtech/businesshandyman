@@ -37,16 +37,24 @@ const CompleteProfile = () => {
 
     setLoading(true);
 
-    const { error } = await supabase.from("profiles").insert({
+    // Insert public profile
+    const { data: profileData, error } = await supabase.from("profiles").insert({
       user_id: user.id,
       account_type: formData.accountType,
       full_name: formData.fullName,
       profession: formData.profession || null,
       bio: formData.bio || null,
       location: formData.location || null,
-      phone_number: formData.phoneNumber || null,
       skills: [],
-    });
+    }).select("id").single();
+
+    // Insert private contact info if phone number provided
+    if (!error && profileData && formData.phoneNumber) {
+      await supabase.from("profiles_private").insert({
+        profile_id: profileData.id,
+        phone_number: formData.phoneNumber || null,
+      });
+    }
 
     setLoading(false);
 

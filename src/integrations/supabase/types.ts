@@ -307,12 +307,10 @@ export type Database = {
           full_name: string
           id: string
           location: string | null
-          phone_number: string | null
           profession: string | null
           skills: string[] | null
           updated_at: string
           user_id: string
-          whatsapp_number: string | null
         }
         Insert: {
           account_type: string
@@ -325,12 +323,10 @@ export type Database = {
           full_name: string
           id?: string
           location?: string | null
-          phone_number?: string | null
           profession?: string | null
           skills?: string[] | null
           updated_at?: string
           user_id: string
-          whatsapp_number?: string | null
         }
         Update: {
           account_type?: string
@@ -343,14 +339,54 @@ export type Database = {
           full_name?: string
           id?: string
           location?: string | null
-          phone_number?: string | null
           profession?: string | null
           skills?: string[] | null
           updated_at?: string
           user_id?: string
-          whatsapp_number?: string | null
         }
         Relationships: []
+      }
+      profiles_private: {
+        Row: {
+          created_at: string
+          id: string
+          phone_number: string | null
+          profile_id: string
+          updated_at: string
+          whatsapp_number: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phone_number?: string | null
+          profile_id: string
+          updated_at?: string
+          whatsapp_number?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phone_number?: string | null
+          profile_id?: string
+          updated_at?: string
+          whatsapp_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_private_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_private_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       push_subscriptions: {
         Row: {

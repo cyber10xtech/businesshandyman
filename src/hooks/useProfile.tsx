@@ -21,6 +21,34 @@ export interface Profile {
   updated_at: string;
 }
 
+// Fields stored in profiles_private table
+const PRIVATE_FIELDS = ["phone_number", "whatsapp_number"] as const;
+
+const fetchMergedProfile = async (userId: string): Promise<Profile | null> => {
+  const { data: profileData, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (profileError) throw profileError;
+  if (!profileData) return null;
+
+  const { data: privateData, error: privateError } = await supabase
+    .from("profiles_private")
+    .select("phone_number, whatsapp_number")
+    .eq("profile_id", profileData.id)
+    .maybeSingle();
+
+  if (privateError) throw privateError;
+
+  return {
+    ...(profileData as Omit<Profile, "phone_number" | "whatsapp_number">),
+    phone_number: privateData?.phone_number ?? null,
+    whatsapp_number: privateData?.whatsapp_number ?? null,
+  };
+};
+
 export const useProfile = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -36,19 +64,12 @@ export const useProfile = () => {
       return;
     }
 
-    const fetchProfile = async () => {
+    const load = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (error) throw error;
-        
-        setProfile(data as Profile | null);
-        setProfileExists(data !== null);
+        const merged = await fetchMergedProfile(user.id);
+        setProfile(merged);
+        setProfileExists(merged !== null);
       } catch (err) {
         setError(err as Error);
         setProfileExists(false);
@@ -57,28 +78,48 @@ export const useProfile = () => {
       }
     };
 
-    fetchProfile();
+    load();
   }, [user]);
 
   const updateProfile = async (updates: Partial<Omit<Profile, "id" | "user_id" | "account_type" | "created_at" | "updated_at">>) => {
-    if (!user) return { error: new Error("Not authenticated") };
+    if (!user || !profile) return { error: new Error("Not authenticated") };
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update(updates)
-        .eq("user_id", user.id);
+      // Split updates into public (profiles) and private (profiles_private) fields
+      const privateUpdates: Record<string, string | null> = {};
+      const publicUpdates: Record<string, unknown> = {};
 
-      if (error) throw error;
+      for (const [key, value] of Object.entries(updates)) {
+        if ((PRIVATE_FIELDS as readonly string[]).includes(key)) {
+          privateUpdates[key] = value as string | null;
+        } else {
+          publicUpdates[key] = value;
+        }
+      }
 
-      // Refetch profile
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .single();
+      // Update public profile fields
+      if (Object.keys(publicUpdates).length > 0) {
+        const { error } = await supabase
+          .from("profiles")
+          .update(publicUpdates)
+          .eq("user_id", user.id);
+        if (error) throw error;
+      }
 
-      setProfile(data as Profile);
+      // Upsert private profile fields
+      if (Object.keys(privateUpdates).length > 0) {
+        const { error } = await supabase
+          .from("profiles_private")
+          .upsert(
+            { profile_id: profile.id, ...privateUpdates },
+            { onConflict: "profile_id" }
+          );
+        if (error) throw error;
+      }
+
+      // Refetch merged profile
+      const merged = await fetchMergedProfile(user.id);
+      setProfile(merged);
       return { error: null };
     } catch (err) {
       return { error: err as Error };

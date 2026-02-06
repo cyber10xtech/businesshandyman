@@ -107,24 +107,40 @@ const Register = () => {
     if (!userId) return;
 
     try {
-      const { error } = await supabase
+      // Update public profile fields
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .update({
           full_name: formData.fullName,
           profession: formData.profession || null,
           bio: formData.bio || null,
           location: formData.location || null,
-          phone_number: formData.phoneNumber || null,
-          whatsapp_number: formData.whatsappNumber || null,
           daily_rate: formData.dailyRate || null,
           contract_rate: formData.contractRate || null,
           skills: formData.skills || [],
           documents_uploaded: formData.documentsUploaded,
           updated_at: new Date().toISOString(),
         })
-        .eq("user_id", userId);
+        .eq("user_id", userId)
+        .select("id")
+        .single();
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Upsert private contact info
+      if (formData.phoneNumber || formData.whatsappNumber) {
+        const { error: privateError } = await supabase
+          .from("profiles_private")
+          .upsert(
+            {
+              profile_id: profileData.id,
+              phone_number: formData.phoneNumber || null,
+              whatsapp_number: formData.whatsappNumber || null,
+            },
+            { onConflict: "profile_id" }
+          );
+        if (privateError) throw privateError;
+      }
     } catch (err) {
       if (import.meta.env.DEV) {
         console.error("Error updating profile:", err);
