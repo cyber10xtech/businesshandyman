@@ -1,11 +1,7 @@
-import type { CapacitorConfig } from '@capacitor/cli';
-const config: CapacitorConfig = {
-  appId: 'app.proconnect.professional',
-  appName: 'ProConnect',
-  webDir: 'dist',
-  server: {
-    url: 'https://e0223ea6-6a9e-4635-95ad-ee74eddc58bb.lovableproject.com/dashboard?forceHideBadge=true',
-    cleartext: true
-  }
+// This is an example `capacitor.config.professional.ts` file. 
+export default {
+  appId: 'com.example.app',
+  appName: 'Safesight# Professional',
+  webDir: 'www',
+  bundledWebRuntime: false
 };
-export default config;
