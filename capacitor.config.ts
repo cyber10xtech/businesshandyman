@@ -1,13 +1,9 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+// capacitor.config.ts
 
-const config: CapacitorConfig = {
-  appId: 'app.lovable.safesearchbusiness',
-  appName: 'Safesearch Business',
-  webDir: 'dist',
-  server: {
-    url: 'https://e0223ea6-6a9e-4635-95ad-ee74eddc58bb.lovableproject.com/dashboard?forceHideBadge=true',
-    cleartext: true
-  }
+const config = {
+  appId: 'com.cyber10xtech.businesshandyman',
+  appName: 'Safesight#',
+  // other configurations...
 };
 
 export default config;
